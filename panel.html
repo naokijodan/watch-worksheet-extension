@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Watch Worksheet</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+
+  <!-- ========== セクション: 入力 ========== -->
+  <div id="sectionInput" class="section">
+    <div class="panel-header">
+      <h1>Watch Worksheet作成君</h1>
+      <button class="link-btn" id="openSettingsLink">⚙ 会社情報設定</button>
+    </div>
+
+    <!-- 入力方式切り替えタブ -->
+    <div class="input-mode-tabs" role="tablist">
+      <button class="tab-btn tab-active" id="tabPaste" role="tab" aria-selected="true" aria-controls="modePaste">
+        ChatGPT出力を貼る
+      </button>
+      <button class="tab-btn" id="tabDirect" role="tab" aria-selected="false" aria-controls="modeDirect">
+        直接入力する
+      </button>
+    </div>
+
+    <!-- ===== モード: ChatGPT貼り付け ===== -->
+    <div id="modePaste" class="input-mode" role="tabpanel">
+      <div class="gpts-link-row">
+        <a href="https://chatgpt.com/g/g-690a197b31d08191915c44890a1c31a1-gai-liang-ban-watch-worksheetzuo-cheng-yong-gpts"
+           target="_blank" rel="noopener noreferrer" class="btn-gpts">
+          Watch Worksheet用GPTsを開く ↗
+        </a>
+      </div>
+      <form id="worksheetForm" novalidate>
+        <div class="form-group">
+          <label for="chatgptData">ChatGPT データ <span class="required">*</span></label>
+          <textarea id="chatgptData" name="chatgptData"
+            placeholder="ChatGPTから出力されたデータをここに貼り付けてください。&#10;「=== WATCH WORKSHEET DATA ===」から「=== END DATA ===」の部分が含まれている必要があります。"
+            rows="10"></textarea>
+        </div>
+
+        <div id="inputMessage" class="message" role="alert"></div>
+
+        <button type="submit" class="btn btn-primary" id="createBtn">ワークシートを作成</button>
+      </form>
+
+      <div class="loading" id="inputLoading">
+        <span class="spinner"></span>データを解析中...
+      </div>
+    </div>
+
+    <!-- ===== モード: 直接入力 ===== -->
+    <div id="modeDirect" class="input-mode" style="display:none;" role="tabpanel">
+      <form id="directForm" novalidate>
+
+        <!-- ---- 基本情報 ---- -->
+        <div class="di-section-title">基本情報</div>
+
+        <div class="form-group">
+          <label for="di_brand">ブランド <span class="required">*</span></label>
+          <input type="text" id="di_brand" name="di_brand" placeholder="例: Citizen">
+        </div>
+        <div class="form-group">
+          <label for="di_reference">型番 / Reference <span class="required">*</span></label>
+          <input type="text" id="di_reference" name="di_reference" placeholder="例: BM8180-03E">
+        </div>
+
+        <!-- ---- ムーブメント ---- -->
+        <div class="di-section-title">ムーブメント</div>
+
+        <div class="form-group">
+          <label for="di_movementType">ムーブメント種別 <span class="required">*</span></label>
+          <select id="di_movementType" name="di_movementType">
+            <option value="Quartz">Quartz（クオーツ）</option>
+            <option value="Automatic">Automatic（自動巻き）</option>
+            <option value="Manual">Manual（手巻き）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="di_displayType">表示種別 <span class="required">*</span></label>
+          <select id="di_displayType" name="di_displayType">
+            <option value="Analog">Analog（針式）</option>
+            <option value="Digital">Digital（デジタル）</option>
+            <option value="Analog-Digital">Analog-Digital（両方）</option>
+          </select>
+        </div>
+        <div class="form-group" id="di_jewelsGroup">
+          <label for="di_jewelCount">Jewels 石数（機械式のみ）</label>
+          <input type="number" id="di_jewelCount" name="di_jewelCount" min="0" max="99" step="1" placeholder="例: 25">
+          <div class="field-note" id="di_jewelsNote">Quartzを選択した場合は入力不要（Not applicable for quartz として扱います）</div>
+        </div>
+        <div class="form-group">
+          <label for="di_over12mm">ムーブメントが 12mm 超か</label>
+          <select id="di_over12mm" name="di_over12mm">
+            <option value="No">No（12mm以下）</option>
+            <option value="Yes">Yes（12mm超）</option>
+            <option value="Unknown">不明</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="di_primaryFunction">主な機能</label>
+          <select id="di_primaryFunction" name="di_primaryFunction">
+            <option value="Timekeeping">Timekeeping（時刻表示）</option>
+            <option value="GPS">GPS</option>
+            <option value="Heart Monitor">Heart Monitor（心拍）</option>
+            <option value="Wi-Fi">Wi-Fi</option>
+            <option value="Pedometer">Pedometer（歩数計）</option>
+            <option value="Other">Other（その他）</option>
+          </select>
+        </div>
+
+        <!-- ---- バンド ---- -->
+        <div class="di-section-title">バンド素材</div>
+
+        <div class="form-group">
+          <label for="di_bandMaterial">バンド種類</label>
+          <select id="di_bandMaterial" name="di_bandMaterial">
+            <option value="Textile">Textile（繊維）</option>
+            <option value="Metal">Metal（金属）</option>
+            <option value="Leather">Leather（革）</option>
+            <option value="No Band">No Band（バンドなし）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="di_bandDetail">バンド詳細（具体的な素材）</label>
+          <input type="text" id="di_bandDetail" name="di_bandDetail"
+            list="dl_bandDetail"
+            placeholder="候補から選ぶか、自由入力してください">
+          <datalist id="dl_bandDetail">
+            <option value="Stainless Steel">
+            <option value="Titanium">
+            <option value="Gold Plated">
+            <option value="Solid Gold">
+            <option value="Leather (Cow)">
+            <option value="Leather (Calf)">
+            <option value="Crocodile">
+            <option value="Alligator">
+            <option value="Rubber">
+            <option value="Silicone">
+            <option value="Nylon">
+            <option value="Fabric">
+            <option value="Ceramic">
+          </datalist>
+        </div>
+
+        <!-- ---- ケース ---- -->
+        <div class="di-section-title">ケース素材</div>
+
+        <div class="form-group">
+          <label for="di_caseMaterial">ケース種類</label>
+          <select id="di_caseMaterial" name="di_caseMaterial">
+            <option value="NOT Gold/Silver Plated">NOT Gold/Silver Plated（非メッキ）</option>
+            <option value="Gold/Silver Plated">Gold/Silver Plated（金・銀メッキ）</option>
+            <option value="Metal Clad w/Precious Metal">Metal Clad w/Precious Metal（貴金属張り）</option>
+            <option value="Wholly of Precious Metal">Wholly of Precious Metal（貴金属のみ）</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="di_caseDetail">ケース詳細（ベース素材のみ）</label>
+          <input type="text" id="di_caseDetail" name="di_caseDetail"
+            list="dl_caseDetail"
+            placeholder="候補から選ぶか、自由入力してください">
+          <datalist id="dl_caseDetail">
+            <option value="Stainless Steel">
+            <option value="Titanium">
+            <option value="Brass">
+            <option value="Plastic">
+            <option value="Resin">
+            <option value="Ceramic">
+            <option value="Solid Gold">
+            <option value="Silver">
+            <option value="14K Gold Plated">
+            <option value="18K Gold Plated">
+            <option value="Gold Plated">
+            <option value="Silver Plated">
+          </datalist>
+        </div>
+
+        <!-- ---- 裏蓋 ---- -->
+        <div class="di-section-title">裏蓋素材</div>
+
+        <div class="form-group">
+          <label for="di_backplateMaterial">裏蓋種類</label>
+          <select id="di_backplateMaterial" name="di_backplateMaterial">
+            <option value="Other">Other（通常素材）</option>
+            <option value="Wholly of Precious Metal">Wholly of Precious Metal（貴金属のみ）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="di_backplateDetail">裏蓋詳細</label>
+          <input type="text" id="di_backplateDetail" name="di_backplateDetail"
+            list="dl_backplateDetail"
+            placeholder="候補から選ぶか、自由入力してください">
+          <datalist id="dl_backplateDetail">
+            <option value="Stainless Steel">
+            <option value="Titanium">
+            <option value="Glass">
+          </datalist>
+        </div>
+
+        <!-- ---- 製造国 ---- -->
+        <div class="di-section-title">製造国</div>
+
+        <div class="form-group">
+          <label for="di_countryMain">製造国（全パーツ一括）</label>
+          <select id="di_countryMain" name="di_countryMain">
+            <option value="">-- 選択してください --</option>
+            <option value="Japan">Japan（日本）</option>
+            <option value="Switzerland">Switzerland（スイス）</option>
+            <option value="Germany">Germany（ドイツ）</option>
+            <option value="United States">United States（米国）</option>
+            <option value="China">China（中国）</option>
+            <option value="Other">Other</option>
+          </select>
+          <div class="field-note">選択するとMovement/Case/Bandを自動で同じ国にセット。バッテリーはQuartzならJapan・機械式ならN/Aを自動設定。個別変更も可能。</div>
+        </div>
+
+        <div class="country-grid">
+          <div class="form-group">
+            <label for="di_movementCountry">Movement 原産国</label>
+            <select id="di_movementCountry" name="di_movementCountry">
+              <option value="Japan">Japan</option>
+              <option value="Switzerland">Switzerland</option>
+              <option value="Germany">Germany</option>
+              <option value="United States">United States</option>
+              <option value="China">China</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="di_caseCountry">Case 原産国</label>
+            <select id="di_caseCountry" name="di_caseCountry">
+              <option value="Japan">Japan</option>
+              <option value="Switzerland">Switzerland</option>
+              <option value="Germany">Germany</option>
+              <option value="United States">United States</option>
+              <option value="China">China</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="di_bandCountry">Band 原産国</label>
+            <select id="di_bandCountry" name="di_bandCountry">
+              <option value="Japan">Japan</option>
+              <option value="Switzerland">Switzerland</option>
+              <option value="Germany">Germany</option>
+              <option value="United States">United States</option>
+              <option value="China">China</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="di_batteryCountry">Battery 原産国</label>
+            <select id="di_batteryCountry" name="di_batteryCountry">
+              <option value="Japan">Japan</option>
+              <option value="N/A">N/A（機械式）</option>
+              <option value="Switzerland">Switzerland</option>
+              <option value="Germany">Germany</option>
+              <option value="United States">United States</option>
+              <option value="China">China</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ---- 価格 ---- -->
+        <div class="di-section-title">価格</div>
+
+        <div class="form-group">
+          <label for="di_quantity">数量</label>
+          <input type="number" id="di_quantity" name="di_quantity" min="1" step="1" value="1">
+        </div>
+        <div class="price-row">
+          <div class="form-group" style="flex:1;">
+            <label for="di_price">販売価格 <span class="required">*</span></label>
+            <input type="number" id="di_price" name="di_price" min="0" step="0.01" placeholder="例: 250">
+          </div>
+          <div class="form-group" style="width:90px;">
+            <label for="di_currency">通貨</label>
+            <select id="di_currency" name="di_currency">
+              <option value="USD">USD</option>
+              <option value="JPY">JPY</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+              <option value="CHF">CHF</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ---- HTSUS ---- -->
+        <div class="di-section-title">HTSUS コード</div>
+
+        <div class="form-group">
+          <div id="di_htsHint" class="hts-hint"></div>
+          <label for="di_htsCode">HTSUS コード（10桁）</label>
+          <input type="text" id="di_htsCode" name="di_htsCode"
+            placeholder="例: 9102.21.5040"
+            maxlength="12">
+          <div class="field-note">上記の候補はあくまで参考です。必ず手入力で確認・上書きしてください。</div>
+          <div id="di_htsError" class="hts-error" style="display:none;"></div>
+        </div>
+
+        <!-- ---- 自動生成タイトル ---- -->
+        <div class="di-section-title">通関用タイトル（自動生成）</div>
+
+        <div class="form-group">
+          <div id="di_titlePreview" class="title-preview"></div>
+          <label for="di_styleRef">Style name/No/Reference <span class="required">*</span></label>
+          <input type="text" id="di_styleRef" name="di_styleRef"
+            placeholder="自動生成されます。手動で修正可能です。">
+          <div class="field-note">「タイトルを生成」ボタンを押すと上記フォームの内容からタイトルを自動生成します。</div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="di_genTitleBtn">タイトルを生成</button>
+
+        <div id="directInputMessage" class="message" role="alert"></div>
+
+        <div style="margin-top:16px;">
+          <button type="submit" class="btn btn-primary" id="di_createBtn">確認ウィザードへ進む</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========== セクション: 設定 ========== -->
+  <div id="sectionSettings" class="section" style="display:none;">
+    <div class="panel-header">
+      <h1>会社情報設定</h1>
+      <button class="link-btn" id="backToInputFromSettings">← 戻る</button>
+    </div>
+
+    <form id="settingsForm" novalidate>
+      <div class="form-group">
+        <label for="companyName">Company Name <span class="required">*</span></label>
+        <input type="text" id="companyName" name="companyName"
+          autocomplete="organization" placeholder="例: ABC Import Co.">
+      </div>
+      <div class="form-group">
+        <label for="nameAndTitle">Name and Title <span class="required">*</span></label>
+        <input type="text" id="nameAndTitle" name="nameAndTitle"
+          autocomplete="name" placeholder="例: John Smith Manager">
+      </div>
+      <div class="form-group">
+        <label for="email">E-mail <span class="required">*</span></label>
+        <input type="email" id="email" name="email"
+          autocomplete="email" placeholder="例: john@example.com">
+      </div>
+
+      <div id="settingsMessage" class="message" role="alert"></div>
+
+      <div class="button-row">
+        <button type="submit" class="btn btn-primary" id="saveSettingsBtn">保存</button>
+        <button type="button" class="btn btn-ghost" id="cancelSettingsBtn">キャンセル</button>
+      </div>
+    </form>
+
+    <div class="loading" id="settingsLoading">
+      <span class="spinner"></span>保存中...
+    </div>
+  </div>
+
+  <!-- ========== セクション: 確認ウィザード ========== -->
+  <div id="sectionWizard" class="section" style="display:none;">
+    <div class="panel-header">
+      <h1>確認ウィザード</h1>
+      <button class="link-btn" id="backToInputFromWizard">← 最初から</button>
+    </div>
+
+    <div class="wizard-progress" id="wizardProgress">1 / 7 確認済み</div>
+
+    <!-- B1: 基本情報・タイトル -->
+    <div class="wizard-block" id="block1">
+      <h2 class="block-title">Block 1 — 基本情報・タイトル</h2>
+
+      <div class="field-group">
+        <label>Style name/No/Reference（行3）</label>
+        <input type="text" id="f_styleRef" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Style of watch（行4）</label>
+        <input type="text" id="f_styleOfWatch" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>If Other, provide type（行5）</label>
+        <input type="text" id="f_styleOther" class="wiz-input" placeholder="（Wrist/Pocket以外の場合のみ）">
+      </div>
+      <div class="field-group">
+        <label>Quantity（行6）</label>
+        <input type="text" id="f_quantity" class="wiz-input">
+      </div>
+
+      <div class="block-nav">
+        <span></span>
+        <button class="btn btn-primary wiz-next" data-block="1">次へ →</button>
+      </div>
+    </div>
+
+    <!-- B2: HTSUSコード -->
+    <div class="wizard-block" id="block2" style="display:none;">
+      <h2 class="block-title">Block 2 — HTSUSコード</h2>
+
+      <div class="field-group">
+        <label>HTSUS Number [1]（行7）</label>
+        <input type="text" id="f_hts1" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>HTSUS Number [2]（行8）</label>
+        <input type="text" id="f_hts2" class="wiz-input" placeholder="（通常空欄）">
+      </div>
+      <div class="field-group">
+        <label>HTSUS Number [3]（行9）</label>
+        <input type="text" id="f_hts3" class="wiz-input" placeholder="（通常空欄）">
+      </div>
+      <div class="field-group">
+        <label>HTSUS Number [4]（行10）</label>
+        <input type="text" id="f_hts4" class="wiz-input" placeholder="（通常空欄）">
+      </div>
+
+      <div class="block-nav">
+        <button class="btn btn-ghost wiz-prev" data-block="2">← 戻る</button>
+        <button class="btn btn-primary wiz-next" data-block="2">次へ →</button>
+      </div>
+    </div>
+
+    <!-- B3: 機能・電源 -->
+    <div class="wizard-block" id="block3" style="display:none;">
+      <h2 class="block-title">Block 3 — 機能・電源</h2>
+
+      <div class="field-group">
+        <label>Primary function of watch（行11）</label>
+        <input type="text" id="f_primaryFunc" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>If Other, primary function（行12）</label>
+        <input type="text" id="f_primaryFuncOther" class="wiz-input" placeholder="（Otherの場合のみ）">
+      </div>
+      <div class="field-group">
+        <label>How is the watch powered（行13）</label>
+        <input type="text" id="f_powered" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Country of Origin of the battery（行14）</label>
+        <input type="text" id="f_batteryOrigin" class="wiz-input">
+      </div>
+
+      <div class="block-nav">
+        <button class="btn btn-ghost wiz-prev" data-block="3">← 戻る</button>
+        <button class="btn btn-primary wiz-next" data-block="3">次へ →</button>
+      </div>
+    </div>
+
+    <!-- B4: ムーブメント -->
+    <div class="wizard-block" id="block4" style="display:none;">
+      <h2 class="block-title">Block 4 — ムーブメント</h2>
+
+      <div class="field-group">
+        <label>Movement / Display type（行15）</label>
+        <input type="text" id="f_movementDisplay" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Over 12mm Yes/No（行16）</label>
+        <input type="text" id="f_over12mm" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Number of Jewels in Movement（行17）</label>
+        <input type="text" id="f_jewels" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Country of Origin of Movement（行18）</label>
+        <input type="text" id="f_movementOrigin" class="wiz-input">
+      </div>
+
+      <div class="block-nav">
+        <button class="btn btn-ghost wiz-prev" data-block="4">← 戻る</button>
+        <button class="btn btn-primary wiz-next" data-block="4">次へ →</button>
+      </div>
+    </div>
+
+    <!-- B5: 素材・原産国 -->
+    <div class="wizard-block" id="block5" style="display:none;">
+      <h2 class="block-title">Block 5 — 素材・原産国</h2>
+
+      <div class="field-group">
+        <label>Material of Band / Strap（行19）</label>
+        <input type="text" id="f_bandMaterial" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>If Leather, type of animal（行20）</label>
+        <input type="text" id="f_bandLeather" class="wiz-input" placeholder="（Leatherの場合のみ）">
+      </div>
+      <div class="field-group">
+        <label>If Metal, type of metal（行21）</label>
+        <input type="text" id="f_bandMetal" class="wiz-input" placeholder="（Metalの場合のみ）">
+      </div>
+      <div class="field-group">
+        <label>If Other, band material（行22）</label>
+        <input type="text" id="f_bandOther" class="wiz-input" placeholder="（Otherの場合のみ）">
+      </div>
+      <div class="field-group">
+        <label>Country of Origin of Band（行23）</label>
+        <input type="text" id="f_bandOrigin" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Material of Case（行24）</label>
+        <input type="text" id="f_caseMaterial" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>If Other, case material（行25）</label>
+        <input type="text" id="f_caseOther" class="wiz-input" placeholder="（通常空欄）">
+      </div>
+      <div class="field-group">
+        <label>Country of Origin of Case（行26）</label>
+        <input type="text" id="f_caseOrigin" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Material of Backplate（行27）</label>
+        <input type="text" id="f_backplateMaterial" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>If Other, backplate material（行28）</label>
+        <input type="text" id="f_backplateOther" class="wiz-input" placeholder="（通常空欄）">
+      </div>
+
+      <div class="block-nav">
+        <button class="btn btn-ghost wiz-prev" data-block="5">← 戻る</button>
+        <button class="btn btn-primary wiz-next" data-block="5">次へ →</button>
+      </div>
+    </div>
+
+    <!-- B6: 価格 -->
+    <div class="wizard-block" id="block6" style="display:none;">
+      <h2 class="block-title">Block 6 — 価格（Value Breakout）</h2>
+      <p class="block-note">※ この値をそのまま最終出力に使用します。自動再計算はされません。</p>
+
+      <div class="field-group">
+        <label>Movement（行30）</label>
+        <input type="text" id="f_movementValue" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Case（行31）</label>
+        <input type="text" id="f_caseValue" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Strap（行32）</label>
+        <input type="text" id="f_strapValue" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Battery（行33）</label>
+        <input type="text" id="f_batteryValue" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Total Watch Value（行34）</label>
+        <input type="text" id="f_totalValue" class="wiz-input">
+      </div>
+
+      <div class="block-nav">
+        <button class="btn btn-ghost wiz-prev" data-block="6">← 戻る</button>
+        <button class="btn btn-primary wiz-next" data-block="6">次へ →</button>
+      </div>
+    </div>
+
+    <!-- B7: AWB・会社情報 -->
+    <div class="wizard-block" id="block7" style="display:none;">
+      <h2 class="block-title">Block 7 — AWB・会社情報</h2>
+
+      <div class="field-group">
+        <label for="f_awb">AWB Number（行39）</label>
+        <input type="text" id="f_awb" class="wiz-input" placeholder="例: 123-4567890">
+      </div>
+      <div class="field-group">
+        <label>Company Name（行36）</label>
+        <input type="text" id="f_wiz_companyName" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>Name and Title（行37）</label>
+        <input type="text" id="f_wiz_nameAndTitle" class="wiz-input">
+      </div>
+      <div class="field-group">
+        <label>E-mail（行38）</label>
+        <input type="text" id="f_wiz_email" class="wiz-input">
+      </div>
+
+      <div class="block-nav">
+        <button class="btn btn-ghost wiz-prev" data-block="7">← 戻る</button>
+        <button class="btn btn-success" id="confirmDoneBtn">確認完了 ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== セクション: 印刷プレビュー ========== -->
+  <div id="sectionPrint" class="section" style="display:none;">
+    <div class="panel-header">
+      <h1>ワークシート確認</h1>
+      <button class="link-btn" id="backToWizardBtn">← ウィザードへ戻る</button>
+    </div>
+
+    <div class="print-note">
+      <strong>印刷/PDF保存について：</strong>「印刷/PDFとして保存」ボタンを押すと別ウィンドウが開きます。
+      ブラウザの印刷ダイアログで <strong>「背景のグラフィック」をオンにする</strong>と、背景色が正しく印刷されます。
+    </div>
+
+    <div class="ws-actions">
+      <button class="btn btn-success" id="openPrintWindowBtn">印刷 / PDFとして保存</button>
+      <button class="btn btn-ghost" id="backToInputFinalBtn">最初からやり直す</button>
+    </div>
+
+    <!-- 画面確認用の縮小プレビュー表示エリア -->
+    <div class="preview-label">内容プレビュー（印刷時はA4縦で出力されます）</div>
+    <div class="worksheet-preview-wrapper">
+      <table class="worksheet-table" id="previewTable"></table>
+    </div>
+  </div>
+
+  <script src="worksheet.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>
