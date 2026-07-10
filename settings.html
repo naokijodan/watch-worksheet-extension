@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Watch Worksheet - 設定</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* 設定ページ固有の上書き */
+    .container {
+      max-width: 450px;
+    }
+    .header {
+      border-bottom-color: #4CAF50;
+    }
+    input[type="text"]:focus,
+    input[type="email"]:focus {
+      border-color: #4CAF50;
+    }
+    .btn-primary {
+      background-color: #4CAF50;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background-color: #45a049;
+    }
+    .spinner {
+      border-top-color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Watch Worksheet 設定</h2>
+      <p>会社情報を入力してください</p>
+    </div>
+
+    <form id="settingsForm">
+      <div class="form-group">
+        <label for="companyName">Company Name <span class="required">*</span></label>
+        <input type="text" id="companyName" name="companyName"
+          autocomplete="organization" required placeholder="例: ABC Import Co.">
+      </div>
+
+      <div class="form-group">
+        <label for="nameAndTitle">Name and Title <span class="required">*</span></label>
+        <input type="text" id="nameAndTitle" name="nameAndTitle"
+          autocomplete="name" required placeholder="例: John Smith Manager">
+      </div>
+
+      <div class="form-group">
+        <label for="email">E-mail <span class="required">*</span></label>
+        <input type="email" id="email" name="email"
+          autocomplete="email" required placeholder="例: john@example.com">
+      </div>
+
+      <div class="button-group">
+        <button type="submit" class="btn btn-primary" id="saveBtn">保存</button>
+        <button type="button" class="btn btn-danger" id="cancelBtn">キャンセル</button>
+      </div>
+    </form>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      保存中...
+    </div>
+
+    <div class="message" id="message" aria-live="polite"></div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

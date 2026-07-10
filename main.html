@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Watch Worksheet Generator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <h2>Watch Worksheet Generator</h2>
+      <p>AWBナンバーとChatGPTデータを入力してください</p>
+    </div>
+
+    <!-- 入力フォーム -->
+    <div id="inputSection">
+      <form id="worksheetForm">
+        <div class="form-group">
+          <label for="awbNumber">AWB Number <span class="required">*</span></label>
+          <input type="text" id="awbNumber" name="awbNumber" required placeholder="例: 123-4567890">
+          <div class="help-text">追跡番号を入力してください</div>
+        </div>
+
+        <div class="form-group">
+          <label for="chatgptData">ChatGPT データ <span class="required">*</span></label>
+          <textarea id="chatgptData" name="chatgptData" required
+            placeholder="ChatGPTから出力されたデータをここに貼り付けてください..."></textarea>
+          <div class="help-text">
+            ChatGPTの「Watch Import Specialist」から出力されたデータを全てコピー・ペーストしてください。<br>
+            「=== WATCH WORKSHEET DATA ===」から「=== END DATA ===」の部分が含まれている必要があります。
+          </div>
+          <div class="example">
+            <strong>入力例:</strong><br>
+            商品概要 - ブランド名: SEIKO ...<br><br>
+            === WATCH WORKSHEET DATA ===<br>
+            Style name/No/Reference: SKX007<br>
+            Total Watch Value: 120.00 USD<br>
+            Movement Type: Automatic<br>
+            Number of Jewels in Movement: 21<br>
+            Country of Origin of Movement: Japan<br>
+            ...<br>
+            === END DATA ===
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="createBtn">
+          ワークシートを作成
+        </button>
+      </form>
+    </div>
+
+    <!-- ローディング -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      データを解析中...
+    </div>
+
+    <!-- エラー・成功メッセージ -->
+    <div class="message" id="message"></div>
+
+    <!-- ワークシート結果 -->
+    <div id="worksheetResult">
+      <h3>生成されたワークシート</h3>
+      <div class="ws-actions">
+        <button class="btn btn-secondary" id="printBtn">PDFとして保存（印刷）</button>
+        <button class="btn btn-primary" id="backBtn" style="background:#757575;">別のデータを入力</button>
+      </div>
+      <div class="worksheet-table-wrapper">
+        <table class="worksheet-table" id="worksheetTable">
+          <!-- main.js が動的に生成 -->
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="worksheet.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

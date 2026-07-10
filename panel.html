@@ -14,6 +14,12 @@
       <button class="link-btn" id="openSettingsLink">⚙ 会社情報設定</button>
     </div>
 
+    <!-- AI読み取りボタン -->
+    <div class="ai-analyze-row">
+      <button type="button" class="btn btn-ai" id="aiAnalyzeBtn">🤖 商品ページをAIで読み取る</button>
+      <div id="aiAnalyzeMsg" class="message" style="display:none;"></div>
+    </div>
+
     <!-- 入力方式切り替えタブ -->
     <div class="input-mode-tabs" role="tablist">
       <button class="tab-btn tab-active" id="tabPaste" role="tab" aria-selected="true" aria-controls="modePaste">
@@ -53,6 +59,7 @@
     <!-- ===== モード: 直接入力 ===== -->
     <div id="modeDirect" class="input-mode" style="display:none;" role="tabpanel">
       <form id="directForm" novalidate>
+        <div id="aiResultBadge" class="ai-result-badge" style="display:none;"></div>
 
         <!-- ---- 基本情報 ---- -->
         <div class="di-section-title">基本情報</div>
@@ -316,7 +323,10 @@
 
         <div id="directInputMessage" class="message" role="alert"></div>
 
-        <div style="margin-top:16px;">
+        <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+          <button type="button" class="btn btn-success" id="di_printDirectBtn" style="display:none;">
+            印刷プレビューへ直接進む
+          </button>
           <button type="submit" class="btn btn-primary" id="di_createBtn">確認ウィザードへ進む</button>
         </div>
       </form>
@@ -345,6 +355,12 @@
         <label for="email">E-mail <span class="required">*</span></label>
         <input type="email" id="email" name="email"
           autocomplete="email" placeholder="例: john@example.com">
+      </div>
+      <div class="form-group">
+        <label for="openaiKey">OpenAI APIキー</label>
+        <input type="password" id="openaiKey" name="openaiKey"
+          placeholder="sk-... （AI読み取り機能に使用）">
+        <div class="field-note">設定するとトップの「商品ページをAIで読み取る」ボタンが使えます。</div>
       </div>
 
       <div id="settingsMessage" class="message" role="alert"></div>
