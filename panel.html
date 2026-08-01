@@ -303,8 +303,8 @@
           <div id="di_htsHint" class="hts-hint"></div>
           <label for="di_htsCode">HTSUS コード（10桁）</label>
           <input type="text" id="di_htsCode" name="di_htsCode"
-            placeholder="例: 9102.21.5040"
-            maxlength="12">
+            placeholder="例: 9102215040"
+            maxlength="14">
           <div class="field-note">上記の候補はあくまで参考です。必ず手入力で確認・上書きしてください。</div>
           <div id="di_htsError" class="hts-error" style="display:none;"></div>
         </div>
@@ -320,6 +320,14 @@
           <div class="field-note">「タイトルを生成」ボタンを押すと上記フォームの内容からタイトルを自動生成します。</div>
         </div>
         <button type="button" class="btn btn-ghost btn-sm" id="di_genTitleBtn">タイトルを生成</button>
+
+        <!-- ---- AWB ---- -->
+        <div class="di-section-title">AWB番号（任意）</div>
+
+        <div class="form-group">
+          <label for="di_awb">AWB Number（任意・後から手書きも可）</label>
+          <input type="text" id="di_awb" name="di_awb" placeholder="例: 123-4567890">
+        </div>
 
         <div id="directInputMessage" class="message" role="alert"></div>
 
@@ -611,9 +619,21 @@
       <button class="link-btn" id="backToWizardBtn">← ウィザードへ戻る</button>
     </div>
 
+    <div id="printMessage" class="message" role="alert" style="display:none;"></div>
+
     <div class="print-note">
       <strong>印刷/PDF保存について：</strong>「印刷/PDFとして保存」ボタンを押すと別ウィンドウが開きます。
       ブラウザの印刷ダイアログで <strong>「背景のグラフィック」をオンにする</strong>と、背景色が正しく印刷されます。
+    </div>
+
+    <!-- ===== 複数時計（最大5本）管理パネル ===== -->
+    <div class="multi-panel" id="multiPanel">
+      <div class="multi-summary" id="multiSummary">登録済み: 1 / 5 本</div>
+      <div class="multi-list" id="multiList"></div>
+      <div class="multi-note" id="multiNote" style="display:none;">
+        印刷はフェデックス様式（列形式）で出力されます。
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" id="addWatchBtn">＋ 時計を追加（最大5本）</button>
     </div>
 
     <div class="ws-actions">

@@ -641,3 +641,68 @@ input[type="number"]:focus {
   color: #1565c0;
   border: 1px solid #90caf9;
 }
+
+/* ===========================================
+   複数時計（最大5本）管理パネル
+   =========================================== */
+
+.multi-panel {
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  background: #F5F7FA;
+  border: 1px solid #CFD8DC;
+  border-radius: 6px;
+}
+
+.multi-summary {
+  font-size: 12px;
+  font-weight: bold;
+  color: #37474F;
+  margin-bottom: 8px;
+}
+
+.multi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.multi-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid #E0E0E0;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.multi-row-label {
+  flex: 1;
+  word-break: break-word;
+  color: #333;
+}
+
+.multi-delete {
+  color: #b71c1c;
+}
+
+.multi-note {
+  font-size: 11px;
+  color: #795548;
+  background: #FFF9C4;
+  border: 1px solid #F9A825;
+  border-radius: 3px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+}
+
+#addWatchBtn {
+  width: 100%;
+}
+#addWatchBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
