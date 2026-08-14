@@ -569,6 +569,29 @@ input[type="number"]:focus {
   margin-top: 4px;
 }
 
+/* ===========================================
+   AI読み取り: フィールド警告（バンド・石数が不明時）
+   2026-08-14対応: 上部のAIバッジ内の警告文だけでは気づかれにくいという実機フィードバック
+   により追加。該当フィールド自体を赤枠＋ソフトな点滅で強調し、直下にインライン警告文を出す。
+   =========================================== */
+.ai-field-warn {
+  border: 2px solid #b3261e !important;
+  animation: ai-warn-pulse 1.2s ease-in-out infinite;
+}
+@keyframes ai-warn-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(179, 38, 30, 0.35); }
+  50%      { box-shadow: 0 0 6px 2px rgba(179, 38, 30, 0.35); }
+}
+.ai-inline-warn {
+  font-size: 11px;
+  color: #b71c1c;
+  background: #fce4e4;
+  border: 1px solid #ef9a9a;
+  border-radius: 3px;
+  padding: 4px 8px;
+  margin-top: 4px;
+}
+
 /* タイトルプレビュー */
 .title-preview {
   font-size: 11px;

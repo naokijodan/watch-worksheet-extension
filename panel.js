@@ -253,6 +253,15 @@ function setupDirectForm() {
     updateHtsHint();
   });
 
+  // AI読み取りの不確実フィールド警告（赤枠・点滅・インライン警告）は、
+  // ユーザーがそのフィールドに入力・選択した時点で解除する（2026-08-14対応）
+  document.getElementById('di_jewelCount').addEventListener('input', function () {
+    clearAiFieldWarning('di_jewelCount');
+  });
+  document.getElementById('di_bandMaterial').addEventListener('change', function () {
+    clearAiFieldWarning('di_bandMaterial');
+  });
+
   // 製造国一括セット
   document.getElementById('di_countryMain').addEventListener('change', function () {
     applyMainCountry();
@@ -1623,6 +1632,31 @@ function getWatchPageInfo(cb) {
           }
           return '';
         }
+        // 画像URL抽出（最大max件、httpsのみ）。サムネイルらしきURLは末尾に回して大きい画像を優先
+        function getImages(selectors, max) {
+          const found = [];
+          function pushUrl(raw) {
+            if (!raw) return;
+            let u = raw.trim();
+            if (u.indexOf(',') !== -1 || u.indexOf(' ') !== -1) {
+              const candidates = u.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+              if (candidates.length) u = candidates[candidates.length - 1].split(' ')[0];
+            }
+            if (u.indexOf('//') === 0) u = 'https:' + u;
+            if (u.indexOf('https://') !== 0) return;
+            if (found.indexOf(u) === -1) found.push(u);
+          }
+          for (let i = 0; i < selectors.length; i++) {
+            const els = document.querySelectorAll(selectors[i]);
+            for (let j = 0; j < els.length; j++) {
+              const el = els[j];
+              pushUrl(el.getAttribute('src') || el.currentSrc || el.getAttribute('data-src') || el.getAttribute('srcset') || el.getAttribute('data-srcset'));
+            }
+          }
+          const big = found.filter(function (u) { return !/thumb|_s\.|small/i.test(u); });
+          const small = found.filter(function (u) { return /thumb|_s\.|small/i.test(u); });
+          return big.concat(small).slice(0, max);
+        }
 
         // JSON-LD Product schema
         let jsonldProduct = null;
@@ -1639,6 +1673,7 @@ function getWatchPageInfo(cb) {
         }
 
         let productName = '', brand = '', condition = '', description = '', price = '', currency = '';
+        let imageSelectors = [];
 
         if (host.includes('mercari.com')) {
           productName = getText(['h1[class*="name"]', 'h1[data-testid="name"]', 'p[data-testid="product-name"]', 'h1']);
@@ -1647,17 +1682,20 @@ function getWatchPageInfo(cb) {
           brand       = getText(['[data-testid="brand"]', '[class*="brand"]']);
           price       = getText(['[data-testid="price"]', '[class*="price"] span', '[class*="ItemPrice"]']).replace(/[^0-9]/g, '');
           currency    = 'JPY';
+          imageSelectors = ['[data-testid="image-0"] img', '[data-testid^="image-"] img', 'picture img', 'main img'];
         } else if (host.includes('auctions.yahoo.co.jp') || host.includes('buyee.jp')) {
           productName = getText(['h1[class*="Product__title"]', '.Product__title', 'h1']);
           description = getText(['.ProductExplanation__itemDescription', '.ProductDetail__description', '[class*="description"]']).substring(0, 300);
           condition   = getText(['.ProductDetail__condition', '[class*="condition"]']);
           price       = getText(['.Price__value', '.Auction__price', '.ProductDetail__price', '[class*="price"]']).replace(/[^0-9]/g, '');
           currency    = 'JPY';
+          imageSelectors = ['.ProductImage__image img', '#photoImg img', '.itemPhoto img', '#Photos img', 'main img'];
         } else if (host.includes('hardoff.co.jp') || host.includes('bookoff.co.jp')) {
           productName = getText(['h1', '.item-name', '.product-name']);
           description = getText(['.item-detail', '.product-detail', '.description']).substring(0, 300);
           price       = getText(['.price', '.item-price', '[class*="price"]']).replace(/[^0-9]/g, '');
           currency    = 'JPY';
+          imageSelectors = ['.item-photo img', '.photo-main img', '.product-image img', 'main img'];
         } else if (host.includes('ebay.com')) {
           productName = getText(['h1#itemTitle', 'h1[itemprop="name"]', 'h1']);
           description = getText(['#viTabs_0_is', '#itemDescriptionURL', '[itemprop="description"]']).substring(0, 300);
@@ -1665,6 +1703,7 @@ function getWatchPageInfo(cb) {
           condition   = getText(['#condText', '[itemprop="itemCondition"]']);
           price       = getText(['.x-price-primary span', '[itemprop="price"]', '#prcIsum']).replace(/[^0-9.]/g, '');
           currency    = 'USD';
+          imageSelectors = ['#icImg', '.ux-image-carousel-item img', '.ux-image-magnify__image img'];
         }
 
         if (jsonldProduct) {
@@ -1677,7 +1716,22 @@ function getWatchPageInfo(cb) {
         if (!productName) productName = getText(['h1']) || getMeta(['og:title']) || document.title;
         if (!description) description = getMeta(['og:description', 'description']).substring(0, 300);
 
-        return { url, host, productName, brand, condition, description, price, currency };
+        // 商品メイン画像URL（最大3枚、https限定）。サイト別セレクタ→JSON-LD image→og:imageの順でフォールバック
+        let imageUrls = getImages(imageSelectors, 3);
+        if (imageUrls.length < 3 && jsonldProduct && jsonldProduct.image) {
+          const jsonldImages = Array.isArray(jsonldProduct.image) ? jsonldProduct.image : [jsonldProduct.image];
+          for (let ji = 0; ji < jsonldImages.length && imageUrls.length < 3; ji++) {
+            const jUrl = typeof jsonldImages[ji] === 'string' ? jsonldImages[ji] : ((jsonldImages[ji] && jsonldImages[ji].url) || '');
+            if (jUrl.indexOf('https://') === 0 && imageUrls.indexOf(jUrl) === -1) imageUrls.push(jUrl);
+          }
+        }
+        if (imageUrls.length < 3) {
+          const ogImage = getMeta(['og:image']);
+          if (ogImage.indexOf('https://') === 0 && imageUrls.indexOf(ogImage) === -1) imageUrls.push(ogImage);
+        }
+        imageUrls = imageUrls.slice(0, 3);
+
+        return { url, host, productName, brand, condition, description, price, currency, imageUrls };
       }
     }, function (results) {
       if (chrome.runtime.lastError) { cb(null, chrome.runtime.lastError.message); return; }
@@ -1705,8 +1759,9 @@ function callOpenAIWatch(pageInfo, cb) {
     '  "brand": watch brand name (e.g. "Citizen", "Seiko", "Casio")',
     '  "reference": model number or reference (e.g. "BM8180-03E")',
     '  "movementType": one of exactly: "Quartz", "Automatic", "Manual"',
+    '  "jewelCount": positive integer number of jewels if explicitly stated in the text or images (e.g. "23 Jewels", "17石"), otherwise null. Never guess.',
     '  "displayType": one of exactly: "Analog", "Digital", "Analog-Digital"',
-    '  "bandMaterial": one of exactly: "Textile", "Metal", "Leather", "No Band"',
+    '  "bandMaterial": one of exactly: "Textile", "Metal", "Leather", "No Band", "Unknown"',
     '  "bandDetail": specific band material (e.g. "Stainless Steel", "Leather (Cow)", "Rubber")',
     '  "caseMaterial": one of exactly: "NOT Gold/Silver Plated", "Gold/Silver Plated", "Metal Clad w/Precious Metal", "Wholly of Precious Metal", "Other"',
     '  "caseDetail": specific case base material (e.g. "Stainless Steel", "Titanium", "Brass")',
@@ -1715,15 +1770,27 @@ function callOpenAIWatch(pageInfo, cb) {
     '  "country": country of origin, default "Japan" for Japanese marketplace listings',
     '  "htsus": suggested HTSUS code, 10 digits no dots (e.g. "9102215040"). Use 9102215040 for quartz non-precious-case wristwatch, 9102217010 for mechanical non-precious-case.',
     '  "reason": one sentence in Japanese summarizing what was identified',
+    'Set bandMaterial to "Unknown" only when neither the text nor the images make it clear; never guess.',
     'Return ONLY the JSON. No markdown, no explanation.'
   ].join('\n');
+
+  const imageUrls = Array.isArray(pageInfo.imageUrls)
+    ? pageInfo.imageUrls.filter(function (u) { return typeof u === 'string' && u.indexOf('https://') === 0; }).slice(0, 3)
+    : [];
+  let userMessageContent = userContent;
+  if (imageUrls.length > 0) {
+    userMessageContent = [{ type: 'text', text: userContent }];
+    imageUrls.forEach(function (u) {
+      userMessageContent.push({ type: 'image_url', image_url: { url: u, detail: 'low' } });
+    });
+  }
 
   fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + gOpenAiKey },
     body: JSON.stringify({
       model: 'gpt-5.4',
-      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }],
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessageContent }],
       max_completion_tokens: 400
     })
   })
@@ -1741,9 +1808,47 @@ function callOpenAIWatch(pageInfo, cb) {
   .catch(function (e) { cb(e, null); });
 }
 
+/** AI読み取り結果が不確実なフィールド（バンド・石数）を強調表示する。
+ *  2026-08-14対応: 画面上部のAIバッジ内の警告文だけでは気づかれにくいという実機フィードバック
+ *  を受け、対象フィールド自体に赤枠＋ソフトな点滅（.ai-field-warn、panel.css）を付け、
+ *  直下にインライン警告div（.ai-inline-warn）を挿入する。上部バッジのサマリ表示はこの
+ *  関数とは別に従来どおり残す。同じフィールドに対して複数回呼ばれても、既存のインライン警告
+ *  divを使い回すだけで二重に挿入はしない。 */
+function setAiFieldWarning(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+  field.classList.add('ai-field-warn');
+  let warnEl = document.getElementById(fieldId + '_aiWarn');
+  if (!warnEl) {
+    warnEl = document.createElement('div');
+    warnEl.id = fieldId + '_aiWarn';
+    warnEl.className = 'ai-inline-warn';
+    field.insertAdjacentElement('afterend', warnEl);
+  }
+  warnEl.textContent = message;
+}
+
+/** setAiFieldWarningで付けた赤枠・点滅・インライン警告divを解除する。
+ *  ユーザーがそのフィールドに入力・選択した時（setupDirectFormのinput/changeイベント）と、
+ *  再度AI読み取りする直前（fillFromAiの先頭、前回状態のクリア）の両方から呼ばれる。 */
+function clearAiFieldWarning(fieldId) {
+  const field = document.getElementById(fieldId);
+  if (field) field.classList.remove('ai-field-warn');
+  const warnEl = document.getElementById(fieldId + '_aiWarn');
+  if (warnEl && warnEl.parentNode) warnEl.parentNode.removeChild(warnEl);
+}
+
 function fillFromAi(aiData) {
   // 直接入力タブに切り替え
   switchInputMode('direct');
+
+  // 前回のAI読み取りで付いたフィールド警告（赤枠・点滅・インライン警告文）をクリアしてから
+  // 今回の判定結果で作り直す（前回の警告が残らないようにする。2026-08-14対応）
+  clearAiFieldWarning('di_jewelCount');
+  clearAiFieldWarning('di_bandMaterial');
+
+  const bandWarningText  = 'バンドの有無・素材をページから判別できませんでした。商品画像を目で確認し、バンド欄を選択してください。';
+  const jewelWarningText = '石数を読み取れませんでした。商品ページを確認して入力してください。';
 
   // 各フィールドに流し込む
   const set = function (id, val) {
@@ -1759,13 +1864,30 @@ function fillFromAi(aiData) {
   if (aiData.movementType && validMovement.includes(aiData.movementType)) {
     set('di_movementType', aiData.movementType);
   }
+
+  // 石数（Jewels）。正の整数(1〜99)のときのみセット。それ以外（null・0・文字列・範囲外）は未セット。
+  // 機械式（Automatic/Manual）なのに取得できなかった場合のみ警告対象とする（Quartzは警告なし）。
+  let jewelWarning = false;
+  const jc = aiData.jewelCount;
+  if (typeof jc === 'number' && Number.isInteger(jc) && jc >= 1 && jc <= 99) {
+    set('di_jewelCount', jc);
+  } else if (aiData.movementType === 'Automatic' || aiData.movementType === 'Manual') {
+    jewelWarning = true;
+    setAiFieldWarning('di_jewelCount', '⚠ ' + jewelWarningText);
+  }
+
   const validDisplay = ['Analog', 'Digital', 'Analog-Digital'];
   if (aiData.displayType && validDisplay.includes(aiData.displayType)) {
     set('di_displayType', aiData.displayType);
   }
   const validBand = ['Textile', 'Metal', 'Leather', 'No Band'];
+  let bandWarning = false;
   if (aiData.bandMaterial && validBand.includes(aiData.bandMaterial)) {
     set('di_bandMaterial', aiData.bandMaterial);
+  } else if (aiData.bandMaterial) {
+    // "Unknown" または既知4値以外 → 選択肢はセットせず警告のみ表示
+    bandWarning = true;
+    setAiFieldWarning('di_bandMaterial', '⚠ ' + bandWarningText);
   }
   set('di_bandDetail', aiData.bandDetail || '');
 
@@ -1808,16 +1930,35 @@ function fillFromAi(aiData) {
   // HTSUS候補ヒントも更新
   updateHtsHint();
 
-  // AIバッジ表示
+  // AIバッジ表示（上部のサマリ表示。フィールド直下のインライン警告とは別に従来どおり残す）
   const badge = document.getElementById('aiResultBadge');
   if (badge) {
     const reasonText = aiData.reason ? '💡 ' + aiData.reason : '';
+    const escapeText = function (s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+    const bandWarningHtml = bandWarning
+      ? '<div class="ai-reason" style="color:#b3261e;">⚠ ' + escapeText(bandWarningText) + '</div>'
+      : '';
+    const jewelWarningHtml = jewelWarning
+      ? '<div class="ai-reason" style="color:#b3261e;">⚠ ' + escapeText(jewelWarningText) + '</div>'
+      : '';
     badge.innerHTML = '✨ <strong>AI入力補助</strong> — 内容を確認・修正してください。<strong>価格は必ず手入力してください</strong>（申告価格と出品価格が異なる場合があります）。' +
-      (reasonText ? '<div class="ai-reason">' + reasonText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' : '');
+      (reasonText ? '<div class="ai-reason">' + escapeText(reasonText) + '</div>' : '') +
+      bandWarningHtml +
+      jewelWarningHtml;
     badge.style.display = 'block';
   }
 
   // AI読み取り完了後は「印刷プレビューへ直接進む」ボタンを表示
   const printDirectBtn = document.getElementById('di_printDirectBtn');
   if (printDirectBtn) printDirectBtn.style.display = 'block';
+
+  // 警告フィールドが画面外の場合もあるため、最初の警告フィールドへスクロールする
+  // （フォーム内での上下順は石数欄の方がバンド欄より上のため、石数を優先する）
+  const firstWarnFieldId = jewelWarning ? 'di_jewelCount' : (bandWarning ? 'di_bandMaterial' : null);
+  if (firstWarnFieldId) {
+    const firstWarnField = document.getElementById(firstWarnFieldId);
+    if (firstWarnField && firstWarnField.scrollIntoView) {
+      firstWarnField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
 }
